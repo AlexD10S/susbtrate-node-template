@@ -38,7 +38,9 @@ sp-session = { version = "4.0.0-dev", default-features = false, git = "https://g
 sp-std = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 sp-transaction-pool = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 sp-version = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-
+# SC pallet
+pallet-contracts = {version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", package = "pallet-contracts", default-features = false, branch = "polkadot-v0.9.25" }
+pallet-contracts-primitives = { version = "6.0.0", git = "https://github.com/paritytech/substrate", package = "pallet-contracts-primitives", default-features = false, branch = "polkadot-v0.9.25" }
 # Used for the node template's RPCs
 frame-system-rpc-runtime-api = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 pallet-transaction-payment-rpc-runtime-api = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
@@ -50,6 +52,18 @@ hex-literal = { version = "0.3.4", optional = true }
 
 # Local Dependencies
 pallet-template = { version = "4.0.0-dev", default-features = false, path = "../pallets/template" }
+basic-crowdfund = { version = "4.0.0-dev", default-features = false, path = "../pallets/basic-crowdfund" }
+# random-test = { version = "4.0.0-dev", default-features = false, path = "../pallets/random-test" }
+#lockable-currency = { version = "4.0.0-dev", default-features = false, path = "../pallets/lockable-currency" }
+# mint-token = { path = '../pallets/mint-token', default-features = false, version = '4.0.0-dev' }
+# configurable-constant = { path = '../pallets/configurable-constant', default-features = false, version = "4.0.0-dev" }
+
+# Add the Nicks pallet
+[dependencies.pallet-nicks]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+branch = "polkadot-v0.9.25"
+version = '4.0.0-dev'
 
 [build-dependencies]
 substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
@@ -72,6 +86,7 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
+	'pallet-nicks/std', # Added the Nicks pallet
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
@@ -83,6 +98,13 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"basic-crowdfund/std",
+	# "random-test/std",
+	# "lockable-currency/std",
+	# "mint-token/std",
+	# 'configurable-constant/std', # Added local pallet
+	"pallet-contracts/std",
+	"pallet-contracts-primitives/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
