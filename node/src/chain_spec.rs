@@ -1,6 +1,6 @@
 use node_template_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	SystemConfig, WASM_BINARY,
+	SystemConfig, WASM_BINARY, TreasuryConfig, VestingConfig
 };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -56,6 +56,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
+					get_account_id_from_seed::<sr25519::Public>("Charlie"),
+					get_account_id_from_seed::<sr25519::Public>("Dave"),
 					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 				],
@@ -139,7 +141,7 @@ fn testnet_genesis(
 		},
 		balances: BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 10000000000000)).collect(),
 		},
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
@@ -152,5 +154,7 @@ fn testnet_genesis(
 			key: Some(root_key),
 		},
 		transaction_payment: Default::default(),
+		treasury: TreasuryConfig {},
+		vesting: VestingConfig { vesting: vec![] },
 	}
 }

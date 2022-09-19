@@ -14,7 +14,7 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, IdentifyAccount, NumberFor, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, MultiSignature,
 };
@@ -22,6 +22,7 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+use frame_support::traits::StorageMapShim;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -33,9 +34,9 @@ pub use frame_support::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		IdentityFee, Weight,
 	},
-	StorageValue,
+	PalletId, StorageValue,
 };
-pub use frame_system::Call as SystemCall;
+pub use frame_system::{Call as SystemCall, EnsureRoot, EnsureSigned};
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::CurrencyAdapter;
@@ -45,6 +46,8 @@ pub use sp_runtime::{Perbill, Permill};
 
 /// Import the template pallet.
 pub use pallet_template;
+pub use pallet_treasury;
+pub use pallet_vesting;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -125,6 +128,10 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
+pub const MILLICENTS: Balance = 1_000_000_000;
+pub const CENTS: Balance = 1_000 * MILLICENTS;
+pub const DOLLARS: Balance = 100 * CENTS;
+
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
@@ -188,6 +195,9 @@ impl frame_system::Config for Runtime {
 	/// What to do if an account is fully reaped from the system.
 	type OnKilledAccount = ();
 	/// The data to be stored in an account.
+	/// TODO: Changed
+	/// store no extra data in the frame system pallet
+	//type AccountData = ();
 	type AccountData = pallet_balances::AccountData<Balance>;
 	/// Weight information for the extrinsics of this pallet.
 	type SystemWeightInfo = ();
@@ -235,7 +245,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 /// Existential deposit.
-pub const EXISTENTIAL_DEPOSIT: u128 = 500;
+pub const EXISTENTIAL_DEPOSIT: u128 = 1000000000000;
 
 impl pallet_balances::Config for Runtime {
 	type MaxLocks = ConstU32<50>;
@@ -247,9 +257,133 @@ impl pallet_balances::Config for Runtime {
 	type Event = Event;
 	type DustRemoval = ();
 	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
+	// TODO: Changed
+	// type AccountStore = StorageMapShim<
+	// 	pallet_balances::Account<Runtime>,
+	// 	frame_system::Provider<Runtime>,
+	// 	AccountId,
+	// 	pallet_balances::AccountData<Balance>,
+	// >;
 	type AccountStore = System;
 	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
+
+parameter_types! {
+	pub const ProposalBond: Permill = Permill::from_percent(10);
+	pub const ProposalBondMinimum: Balance = 1;
+	pub const ProposalBondMaximum: Balance = 1_000_000_000_000;
+	pub const SpendPeriod: BlockNumber = 10; // 1 minute
+	pub const Burn: Permill = Permill::from_percent(1);
+	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
+	pub const MaxApprovals: u32 = 100;
+}
+
+pub struct RootSpendOrigin;
+impl frame_support::traits::EnsureOrigin<Origin> for RootSpendOrigin {
+	type Success = Balance;
+	fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
+		Result::<frame_system::RawOrigin<_>, Origin>::from(o).and_then(|o| match o {
+			frame_system::RawOrigin::Root => Ok(1_000_000_000_000_000),
+			r => Err(Origin::from(r)),
+		})
+	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<Origin, ()> {
+		Ok(Origin::root())
+	}
+}
+
+impl pallet_treasury::Config for Runtime {
+	type PalletId = TreasuryPalletId;
+	type Currency = Balances;
+	type ApproveOrigin = EnsureSigned<AccountId>;
+	type RejectOrigin = EnsureSigned<AccountId>;
+	type Event = Event;
+	type OnSlash = ();
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type ProposalBondMaximum = ProposalBondMaximum;
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = ();
+	type SpendFunds = ();
+	type MaxApprovals = MaxApprovals;
+	type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+	type SpendOrigin = RootSpendOrigin;
+}
+
+
+type MoreThanHalfCouncil = EnsureRoot<AccountId>;
+
+parameter_types! {
+	pub const BasicDeposit: Balance = 1000000000000;
+	pub const FieldDeposit: Balance = 250000000000;        
+	pub const SubAccountDeposit: Balance = 200000000;   
+	pub const MaxSubAccounts: u32 = 100;
+	pub const MaxAdditionalFields: u32 = 100;
+	pub const MaxRegistrars: u32 = 20;
+}
+
+impl pallet_identity::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type BasicDeposit = BasicDeposit;
+	type FieldDeposit = FieldDeposit;
+	type SubAccountDeposit = SubAccountDeposit;
+	type MaxSubAccounts = MaxSubAccounts;
+	type MaxAdditionalFields = MaxAdditionalFields;
+	type MaxRegistrars = MaxRegistrars;
+	type Slashed = Treasury;
+	type ForceOrigin = MoreThanHalfCouncil;
+	type RegistrarOrigin = MoreThanHalfCouncil;
+	type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+	pub const MinVestedTransfer: Balance = 1000000000000;
+}
+//vesting pallet
+impl pallet_vesting::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type BlockNumberToBalance = ConvertInto;
+	type MinVestedTransfer = MinVestedTransfer;
+	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+	const MAX_VESTING_SCHEDULES: u32 = 28;
+}
+parameter_types! {
+	// Choose a fee that incentivizes desireable behavior.
+	pub const NickReservationFee: u128 = 100;
+	pub const MinNickLength: u32 = 8;
+	// Maximum bounds on storage are important to secure your chain.
+	pub const MaxNickLength: u32 = 32;
+}
+impl pallet_nicks::Config for Runtime {
+	// The Balances pallet implements the ReservableCurrency trait.
+	// `Balances` is defined in `construct_runtime!` macro. See below.
+	// https://paritytech.github.io/substrate/master/pallet_balances/index.html#implementations-2
+	type Currency = Balances;
+
+	// Use the NickReservationFee from the parameter_types block.
+	type ReservationFee = NickReservationFee;
+
+	// No action is taken when deposits are forfeited.
+	type Slashed = Treasury;
+
+	// Configure the FRAME System Root origin as the Nick pallet admin.
+	// https://paritytech.github.io/substrate/master/frame_system/enum.RawOrigin.html#variant.Root
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+
+	// Use the MinNickLength from the parameter_types block.
+	type MinLength = MinNickLength;
+
+	// Use the MaxNickLength from the parameter_types block.
+	type MaxLength = MaxNickLength;
+
+	// The ubiquitous event type.
+	type Event = Event;
+}
+
 
 impl pallet_transaction_payment::Config for Runtime {
 	type Event = Event;
@@ -288,6 +422,10 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
+		Vesting: pallet_vesting,
+		Treasury: pallet_treasury,
+		Nicks: pallet_nicks::{Pallet, Call, Storage, Event<T>},
+		Identity: pallet_identity::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -333,6 +471,8 @@ mod benches {
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
 		[pallet_template, TemplateModule]
+		[pallet_vesting, Vesting]
+		[pallet_identity, Identity]
 	);
 }
 
