@@ -388,6 +388,12 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl pallet_template_runtime_api::TemplateApi<Block> for Runtime {
+		fn get_value() -> u32 {
+			TemplateModule::get_value().unwrap_or(0)
+		}
+	}
+
 	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
 		fn offchain_worker(header: &<Block as BlockT>::Header) {
 			Executive::offchain_worker(header)

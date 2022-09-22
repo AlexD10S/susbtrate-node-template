@@ -33,7 +33,7 @@ pub mod pallet {
 	// The pallet's runtime storage items.
 	// https://docs.substrate.io/main-docs/build/runtime-storage/
 	#[pallet::storage]
-	#[pallet::getter(fn something)]
+	#[pallet::getter(fn get_value)]
 	// Learn more about declaring storage items:
 	// https://docs.substrate.io/main-docs/build/runtime-storage/#declaring-storage-items
 	pub type Something<T> = StorageValue<_, u32>;
@@ -98,5 +98,10 @@ pub mod pallet {
 				},
 			}
 		}
+
+		// #[pallet::weight(10_000 + T::DbWeight::get().reads(1))]
+		// pub fn get_value(origin: OriginFor<T>) -> Result <u32> {
+		// 	Ok(2)
+		// }
 	}
 }
