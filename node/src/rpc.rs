@@ -48,10 +48,17 @@ where
 	module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
 	module.merge(TransactionPayment::new(client).into_rpc())?;
 
+	// let mut io = jsonrpc_core::IoHandler::default();
+	// // Add a silly RPC that returns constant values
+	// io.extend_with(crate::silly_rpc::SillyRpc::to_delegate(
+	// 	crate::silly_rpc::Silly {},
+	// ));
+
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
 	// to call into the runtime.
 	// `module.merge(YourRpcTrait::into_rpc(YourRpcStruct::new(ReferenceToClient, ...)))?;`
+	// module.merge(SillyRpc::into_rpc(Silly::new(client)))?;
 
 	Ok(module)
 }

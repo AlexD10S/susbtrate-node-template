@@ -17,13 +17,16 @@ mod benchmarking;
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
+    use frame_support::traits::Randomness;
 	use frame_system::pallet_prelude::*;
+
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
 	}
 
 	#[pallet::pallet]
@@ -98,5 +101,25 @@ pub mod pallet {
 				},
 			}
 		}
+        // #[pallet::weight(100)]
+        // pub fn create_unique(
+        //     origin: OriginFor<T>)
+        //     -> DispatchResultWithPostInfo {
+        //     // Account calling this dispatchable.
+        //     let sender = ensure_signed(origin)?;
+        //         // Random value.
+        //         let nonce = Self::get_and_increment_nonce();
+        //         let (randomValue, _) = T::MyRandomness::random(&nonce);
+        //     // Write the random value to storage.
+        //     <MyStorageItem<T>>::put(randomValue);
+        //     Self::deposit_event(Event::UniqueCreated(randomValue));
+        // }
+        // fn get_and_increment_nonce() -> Vec<u8> {
+        //     let nonce = Nonce::<T>::get();
+        //     Nonce::<T>::put(nonce.wrapping_add(1));
+        //     nonce.encode()
+        // }
+
 	}
+   
 }

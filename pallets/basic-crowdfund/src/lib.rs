@@ -16,15 +16,64 @@ mod benchmarking;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::pallet_prelude::*;
-	use frame_system::pallet_prelude::*;
+    use frame_support::{
+		ensure,
+		pallet_prelude::*,
+		sp_runtime::traits::{AccountIdConversion, Hash, Saturating, Zero},
+		storage::child,
+		traits::{Currency, ExistenceRequirement, Get, ReservableCurrency, WithdrawReasons},
+		PalletId,
+	};
+	use frame_system::{pallet_prelude::*, ensure_signed};
+	use super::*;
+
+	pub type FundIndex = u32;
+	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type Currency: ReservableCurrency<Self::AccountId>;
+		type SubmissionDeposit: Get<BalanceOf<Self>>;
+		type MinContribution: Get<BalanceOf<Self>>;
+		type RetirementPeriod: Get<Self::BlockNumber>;
 	}
+	#[derive(Encode, Decode, Default, PartialEq, Eq, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(Debug))]
+	pub struct FundInfo<AccountId, Balance, BlockNumber> {
+		/// The account that will recieve the funds if the campaign is successful.
+		beneficiary: AccountId,
+		/// The amount of deposit placed.
+		deposit: Balance,
+		/// The total amount raised.
+		raised: Balance,
+		/// Block number after which funding must have succeeded.
+		end: BlockNumber,
+		/// Upper bound on `raised`.
+		goal: Balance,
+	}
+	type FundInfoOf<T> =
+	FundInfo<AccountIdOf<T>, BalanceOf<T>, <T as frame_system::Config>::BlockNumber>;
+
+	// #[pallet::storage]
+	// #[pallet::getter(fn funds)]
+	// /// Info on all of the funds.
+	// pub(super) type Funds<T: Config> = StorageMap<
+	// 	_,
+	// 	Blake2_128Concat,
+	// 	FundIndex,
+	// 	FundInfoOf<T>,
+	// 	OptionQuery,
+	// >;
+
+	// #[pallet::storage]
+	// #[pallet::getter(fn fund_count)]
+	// /// The total number of funds that have so far been allocated.
+	// pub(super) type FundCount<T: Config> = StorageValue<_, FundIndex, ValueQuery>;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -98,5 +147,18 @@ pub mod pallet {
 				},
 			}
 		}
+
+		// pub fn fund_account_id(index: FundIndex) -> T::AccountId {
+		// 	const PALLET_ID: ModuleId = ModuleId(*b"ex/cfund");
+		// 	PALLET_ID.into_sub_account(index)
+		// }
+		// pub fn id_from_index(index: FundIndex) -> child::ChildInfo {
+		// 	let mut buf = Vec::new();
+		// 	buf.extend_from_slice(b"crowdfnd");
+		// 	buf.extend_from_slice(&index.to_le_bytes()[..]);
+	
+		// 	child::ChildInfo::new_default(T::Hashing::hash(&buf[..]).as_ref())
+		// }
 	}
+   
 }
