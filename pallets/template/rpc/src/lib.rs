@@ -9,6 +9,10 @@ use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use std::sync::Arc;
 
+#[cfg(test)]
+mod tests;
+
+
 #[rpc(client, server)]
 pub trait TemplateApi<BlockHash> {
 	#[method(name = "template_getValue")]
