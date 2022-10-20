@@ -43,13 +43,15 @@ where
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use substrate_frame_rpc_system::{System, SystemApiServer};
 	use pallet_template_rpc::{TemplatePallet, TemplateApiServer};
+	//use crate::silly_rpc::SillyRpc;
 
 	let mut module = RpcModule::new(());
 	let FullDeps { client, pool, deny_unsafe } = deps;
 
 	module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
 	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
-	module.merge(TemplatePallet::new(client).into_rpc())?;
+	module.merge(TemplatePallet::new(client.clone()).into_rpc())?;
+	//module.merge(crate::silly_rpc::SillyRpc::new(client).into_rpc())?;
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
