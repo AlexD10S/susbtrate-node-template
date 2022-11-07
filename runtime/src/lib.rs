@@ -139,8 +139,11 @@ parameter_types! {
 	pub const BlockHashCount: BlockNumber = 2400;
 	pub const Version: RuntimeVersion = VERSION;
 	/// We allow for 2 seconds of compute with a 6 second average block time.
-	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(2u64 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
+	pub BlockWeights: frame_system::limits::BlockWeights =
+		frame_system::limits::BlockWeights::with_sensible_defaults(
+			(2u64 * WEIGHT_PER_SECOND).set_proof_size(u64::MAX),
+			NORMAL_DISPATCH_RATIO,
+		);
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
@@ -275,31 +278,6 @@ impl pallet_template::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
-impl pallet_nicks::Config for Runtime {
-	// The Balances pallet implements the ReservableCurrency trait.
-	// `Balances` is defined in `construct_runtime!` macro.
-	type Currency = Balances;
-
-	// Set ReservationFee to a value.
-	type ReservationFee = ConstU128<100>;
-
-	// No action is taken when deposits are forfeited.
-	type Slashed = ();
-
-	// Configure the FRAME System Root origin as the Nick pallet admin.
-	// https://paritytech.github.io/substrate/master/frame_system/enum.RawOrigin.html#variant.Root
-	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
-
-	// Set MinLength of nick name to a desired value.
-	type MinLength = ConstU32<8>;
-
-	// Set MaxLength of nick name to a desired value.
-	type MaxLength = ConstU32<32>;
-
-	// The ubiquitous event type.
-	type RuntimeEvent = RuntimeEvent;
-}
-
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub struct Runtime
@@ -318,7 +296,6 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
-		Nicks: pallet_nicks,
 	}
 );
 
@@ -339,6 +316,7 @@ pub type SignedExtra = (
 	frame_system::CheckWeight<Runtime>,
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
+
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
@@ -614,5 +592,4 @@ mod tests {
 			whitelist.contains("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 		);
 	}
-
 }
