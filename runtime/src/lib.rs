@@ -278,6 +278,16 @@ impl pallet_template::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
+parameter_types! {
+    //pub Deposit: ConstU128 = ConstU128<1>;
+}
+
+impl pallet_betting::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    // type Currency = Balances;
+    // type MinDeposit = Deposit;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub struct Runtime
@@ -296,6 +306,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
+		Betting: pallet_betting,
 	}
 );
 
@@ -395,6 +406,12 @@ impl_runtime_apis! {
 			block_hash: <Block as BlockT>::Hash,
 		) -> TransactionValidity {
 			Executive::validate_transaction(source, tx, block_hash)
+		}
+	}
+
+	impl pallet_betting_rpc_runtime_api::BettingApi<Block> for Runtime {
+		fn get_value() -> u32 {
+			Betting::get_value().unwrap_or(0)
 		}
 	}
 
