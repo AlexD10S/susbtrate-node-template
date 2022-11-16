@@ -278,6 +278,24 @@ impl pallet_template::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
+parameter_types! {
+	pub const ConfigDepositBase: Balance = 500;
+	pub const FriendDepositFactor: Balance = 50;
+	pub const MaxFriends: u16 = 9;
+	pub const RecoveryDeposit: Balance = 500;
+}
+
+impl pallet_recovery::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	type ConfigDepositBase = ConfigDepositBase;
+	type FriendDepositFactor = FriendDepositFactor;
+	type MaxFriends = MaxFriends;
+	type RecoveryDeposit = RecoveryDeposit;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub struct Runtime
@@ -296,6 +314,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
+		Recovery: pallet_recovery,
 	}
 );
 
@@ -343,6 +362,7 @@ mod benches {
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
 		[pallet_template, TemplateModule]
+		[pallet_recovery, Recovery]
 	);
 }
 
