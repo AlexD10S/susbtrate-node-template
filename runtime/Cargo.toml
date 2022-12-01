@@ -51,8 +51,7 @@ frame-system-benchmarking = { version = "4.0.0-dev", default-features = false, g
 pallet-template = { version = "4.0.0-dev", default-features = false, path = "../pallets/template" }
 
 # External Dependencies
-pallet-betting = { version = "0.0.1", default-features = false, git = "https://github.com/AlexD10S/substrate-betting.git", branch = "main" }
-pallet-betting-rpc-runtime-api = { version = "0.0.1", default-features = false, git = "https://github.com/AlexD10S/substrate-betting.git", branch = "main" }
+pallet-betting = { version = "0.0.3", default-features = false, git = "https://github.com/AlexD10S/substrate-betting.git", branch = "main" }
 
 [build-dependencies]
 substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
@@ -91,7 +90,6 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-version/std",
 	"pallet-betting/std",
-	"pallet-betting-rpc-runtime-api/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

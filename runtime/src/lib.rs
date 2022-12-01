@@ -24,6 +24,7 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+use sp_std::vec::Vec;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -35,7 +36,7 @@ pub use frame_support::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		IdentityFee, Weight,
 	},
-	StorageValue,
+	StorageValue,PalletId
 };
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
@@ -279,13 +280,15 @@ impl pallet_template::Config for Runtime {
 }
 
 parameter_types! {
-    //pub Deposit: ConstU128 = ConstU128<1>;
+	pub const BettingPalletId: PalletId = PalletId(*b"py/betts");
 }
+
 
 impl pallet_betting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // type Currency = Balances;
-    // type MinDeposit = Deposit;
+    type PalletId = BettingPalletId;
+	type Currency = Balances;
+	type MaxBetsPerMatch = ConstU32<10>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -409,11 +412,18 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_betting_rpc_runtime_api::BettingApi<Block> for Runtime {
-		fn get_value() -> u32 {
-			Betting::get_value().unwrap_or(0)
-		}
-	}
+	// impl pallet_betting_rpc_runtime_api::BettingApi<Block, 
+	// 		pallet_betting::Match<BlockNumber, Vec<u8>, 
+	// 							pallet_betting::Bet<AccountId, pallet_betting::MatchResult, Balance>,
+	// 							ConstU32<10>>
+	// 	> for Runtime {
+	// 	fn get_matches() ->  pallet_betting::Match<BlockNumber, Vec<u8>, 
+	// 		pallet_betting::Bet<AccountId, pallet_betting::MatchResult, Balance>,
+	// 		ConstU32<10>>
+	// 	{
+	// 	  Betting::get_matches(0)
+	// 	}
+	//   }
 
 	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
 		fn offchain_worker(header: &<Block as BlockT>::Header) {
