@@ -68,6 +68,9 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
+// pub type Bet = pallet_betting::Bet<AccountId, pallet_betting::MatchResult, Balance>;
+// pub type Match = pallet_betting::Match<BlockNumber, Vec<u8>, Bet, ConstU32<10>>;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -285,10 +288,12 @@ parameter_types! {
 
 
 impl pallet_betting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type PalletId = BettingPalletId;
-	type Currency = Balances;
-	type MaxBetsPerMatch = ConstU32<10>;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    type MaxTeamNameLength = ConstU32<64>;
+    type MaxBetsPerMatch = ConstU32<10>;
+    type WeightInfo = pallet_betting::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -412,18 +417,12 @@ impl_runtime_apis! {
 		}
 	}
 
-	// impl pallet_betting_rpc_runtime_api::BettingApi<Block, 
-	// 		pallet_betting::Match<BlockNumber, Vec<u8>, 
-	// 							pallet_betting::Bet<AccountId, pallet_betting::MatchResult, Balance>,
-	// 							ConstU32<10>>
-	// 	> for Runtime {
-	// 	fn get_matches() ->  pallet_betting::Match<BlockNumber, Vec<u8>, 
-	// 		pallet_betting::Bet<AccountId, pallet_betting::MatchResult, Balance>,
-	// 		ConstU32<10>>
+	// impl pallet_betting_rpc_runtime_api::BettingApi<Block, AccountId,Match> for Runtime {
+	// 	fn get_match(match_id: AccountId) ->  Match
 	// 	{
-	// 	  Betting::get_matches(0)
+	// 	  Betting::get_matches(match_id).unwrap()
 	// 	}
-	//   }
+	// }
 
 	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
 		fn offchain_worker(header: &<Block as BlockT>::Header) {
