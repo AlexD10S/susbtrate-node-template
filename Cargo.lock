@@ -3703,6 +3703,7 @@ dependencies = [
  "frame-system",
  "jsonrpsee",
  "node-template-runtime",
+ "pallet-betting-rpc",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
@@ -3749,6 +3750,7 @@ dependencies = [
  "pallet-aura",
  "pallet-balances",
  "pallet-betting",
+ "pallet-betting-rpc-runtime-api",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -3974,6 +3976,32 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-betting-rpc"
+version = "0.0.1"
+source = "git+https://github.com/AlexD10S/substrate-betting.git?branch=main#ea182bca9c12de8fc2a0ba9e25fb508b1badd27a"
+dependencies = [
+ "jsonrpsee",
+ "pallet-betting-rpc-runtime-api",
+ "parity-scale-codec",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
+]
+
+[[package]]
+name = "pallet-betting-rpc-runtime-api"
+version = "0.0.1"
+source = "git+https://github.com/AlexD10S/substrate-betting.git?branch=main#ea182bca9c12de8fc2a0ba9e25fb508b1badd27a"
+dependencies = [
+ "pallet-betting",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
 ]
 
 [[package]]

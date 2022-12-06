@@ -36,7 +36,7 @@ pub use frame_support::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		IdentityFee, Weight,
 	},
-	StorageValue,PalletId
+	StorageValue,PalletId, BoundedVec
 };
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
@@ -68,8 +68,9 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
-// pub type Bet = pallet_betting::Bet<AccountId, pallet_betting::MatchResult, Balance>;
-// pub type Match = pallet_betting::Match<BlockNumber, Vec<u8>, Bet, ConstU32<10>>;
+pub type TeamName = BoundedVec<u8, ConstU32<64>>;
+pub type Bet = pallet_betting::Bet<AccountId, pallet_betting::MatchResult, Balance>;
+pub type Match = pallet_betting::Match<BlockNumber, TeamName, BoundedVec<Bet, ConstU32<10>>>;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -417,12 +418,12 @@ impl_runtime_apis! {
 		}
 	}
 
-	// impl pallet_betting_rpc_runtime_api::BettingApi<Block, AccountId,Match> for Runtime {
-	// 	fn get_match(match_id: AccountId) ->  Match
-	// 	{
-	// 	  Betting::get_matches(match_id).unwrap()
-	// 	}
-	// }
+	impl pallet_betting_rpc_runtime_api::BettingApi<Block, AccountId,Match> for Runtime {
+		fn get_match(match_id: AccountId) -> Match
+		{
+		  Betting::get_matches(match_id).unwrap()
+		}
+	}
 
 	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
 		fn offchain_worker(header: &<Block as BlockT>::Header) {
