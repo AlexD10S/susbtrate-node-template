@@ -70,7 +70,7 @@ pub type Hash = sp_core::H256;
 
 pub type TeamName = BoundedVec<u8, ConstU32<64>>;
 pub type Bet = pallet_betting::Bet<AccountId, pallet_betting::MatchResult, Balance>;
-pub type Match = pallet_betting::Match<BlockNumber, TeamName, BoundedVec<Bet, ConstU32<10>>>;
+pub type Match = pallet_betting::Match<BlockNumber, TeamName, BoundedVec<Bet, ConstU32<10>>, Balance>;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -284,6 +284,7 @@ impl pallet_template::Config for Runtime {
 }
 
 parameter_types! {
+	pub const MatchDeposit: Balance = 1_000_000_000_000;
 	pub const BettingPalletId: PalletId = PalletId(*b"py/betts");
 }
 
@@ -294,6 +295,7 @@ impl pallet_betting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type MaxTeamNameLength = ConstU32<64>;
     type MaxBetsPerMatch = ConstU32<10>;
+	type MatchDeposit = MatchDeposit;
     type WeightInfo = pallet_betting::weights::SubstrateWeight<Runtime>;
 }
 
@@ -418,10 +420,10 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_betting_rpc_runtime_api::BettingApi<Block, AccountId,Match> for Runtime {
-		fn get_match(match_id: AccountId) -> Match
+	impl pallet_betting_rpc_runtime_api::BettingApi<Block, AccountId, Match> for Runtime {
+		fn get_match(match_id: AccountId) -> pallet_betting_rpc_runtime_api::RpcResult<Match>
 		{
-		  Betting::get_matches(match_id).unwrap()
+			Betting::get_match(match_id)
 		}
 	}
 
