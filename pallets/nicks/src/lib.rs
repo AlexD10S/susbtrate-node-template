@@ -108,10 +108,8 @@ pub mod pallet {
 		Unnamed,
 	}
 
-	/// The lookup table for names.
 	#[pallet::storage]
-	pub(super) type NameOf<T: Config> =
-		StorageMap<_, Twox64Concat, T::AccountId, (BoundedVec<u8, T::MaxLength>, BalanceOf<T>)>;
+	pub(super) type NameOf<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, (BoundedVec<u8, T::MaxLength>, BalanceOf<T>)>;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
