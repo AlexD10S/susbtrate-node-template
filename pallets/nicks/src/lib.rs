@@ -108,11 +108,34 @@ pub mod pallet {
 		Unnamed,
 	}
 
+	#[derive(Encode, Decode, Default, TypeInfo)]
+	pub struct Nickname {
+		first: Vec<u8>,
+		last: Option<Vec<u8>>, // handles empty storage
+	}
+
+	#[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+	pub enum StorageVersion {
+		V1Bytes,
+		V2Struct,
+	}
+
+	/// The lookup table for names.
 	#[pallet::storage]
-	pub(super) type NameOf<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, (BoundedVec<u8, T::MaxLength>, BalanceOf<T>)>;
+	pub(super) type NameOf<T: Config> =
+		StorageMap<_, Twox64Concat, T::AccountId, (Nickname, BalanceOf<T>)>;
+	
+	#[pallet::storage]
+	#[pallet::getter(fn version)]
+	pub type PalletVersion<T> = StorageValue<_, StorageVersion>;
+
+	
+	// #[pallet::storage]
+	// pub(super) type NameOf<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, (BoundedVec<u8, T::MaxLength>, BalanceOf<T>)>;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::call]
@@ -135,12 +158,16 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::call_index(0)]
 		#[pallet::weight(50_000_000)]
-		pub fn set_name(origin: OriginFor<T>, name: Vec<u8>) -> DispatchResult {
+		pub fn set_name(origin: OriginFor<T>, first: Vec<u8>, last: Option<Vec<u8>>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let bounded_name: BoundedVec<_, _> =
-				name.try_into().map_err(|_| Error::<T>::TooLong)?;
-			ensure!(bounded_name.len() >= T::MinLength::get() as usize, Error::<T>::TooShort);
+			let len = match last {
+				None => first.len(),
+				Some(ref last_name) => first.len() + last_name.len(),
+			};
+			ensure!(len <= T::MaxLength::get() as usize, Error::<T>::TooLong);
+			ensure!(len >= T::MinLength::get() as usize, Error::<T>::TooShort);
+			
 
 			let deposit = if let Some((_, deposit)) = <NameOf<T>>::get(&sender) {
 				Self::deposit_event(Event::<T>::NameChanged { who: sender.clone() });
@@ -152,7 +179,8 @@ pub mod pallet {
 				deposit
 			};
 
-			<NameOf<T>>::insert(&sender, (bounded_name, deposit));
+			
+			<NameOf<T>>::insert(&sender, (Nickname { first, last}, deposit));
 			Ok(())
 		}
 
@@ -226,15 +254,21 @@ pub mod pallet {
 		pub fn force_name(
 			origin: OriginFor<T>,
 			target: AccountIdLookupOf<T>,
-			name: Vec<u8>,
+			first: Vec<u8>, 
+			last: Option<Vec<u8>>
 		) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
 
-			let bounded_name: BoundedVec<_, _> =
-				name.try_into().map_err(|_| Error::<T>::TooLong)?;
+			let len = match last {
+				None => first.len(),
+				Some(ref last_name) => first.len() + last_name.len(),
+			};
+			ensure!(len <= T::MaxLength::get() as usize, Error::<T>::TooLong);
+			ensure!(len >= T::MinLength::get() as usize, Error::<T>::TooShort);
+
 			let target = T::Lookup::lookup(target)?;
 			let deposit = <NameOf<T>>::get(&target).map(|x| x.1).unwrap_or_else(Zero::zero);
-			<NameOf<T>>::insert(&target, (bounded_name, deposit));
+			<NameOf<T>>::insert(&target, (Nickname { first, last}, deposit));
 
 			Self::deposit_event(Event::<T>::NameForced { target });
 			Ok(())
