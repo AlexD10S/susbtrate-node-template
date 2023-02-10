@@ -38,16 +38,19 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::traits::{Currency, OnUnbalanced, ReservableCurrency};
+use frame_support::traits::{Currency, OnUnbalanced, ReservableCurrency, StorageVersion};
 pub use pallet::*;
 use sp_runtime::traits::{StaticLookup, Zero};
 use sp_std::prelude::*;
+
+mod migration;
 
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 type NegativeImbalanceOf<T> =
 	<<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
+
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -110,14 +113,8 @@ pub mod pallet {
 
 	#[derive(Encode, Decode, Default, TypeInfo)]
 	pub struct Nickname {
-		first: Vec<u8>,
-		last: Option<Vec<u8>>, // handles empty storage
-	}
-
-	#[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, MaxEncodedLen, TypeInfo)]
-	pub enum StorageVersion {
-		V1Bytes,
-		V2Struct,
+		pub first: Vec<u8>,
+		pub last: Option<Vec<u8>>, // handles empty storage
 	}
 
 	/// The lookup table for names.
@@ -125,18 +122,24 @@ pub mod pallet {
 	pub(super) type NameOf<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, (Nickname, BalanceOf<T>)>;
 	
-	#[pallet::storage]
-	#[pallet::getter(fn version)]
-	pub type PalletVersion<T> = StorageValue<_, StorageVersion>;
-
-	
 	// #[pallet::storage]
 	// pub(super) type NameOf<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, (BoundedVec<u8, T::MaxLength>, BalanceOf<T>)>;
 
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+		
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::without_storage_info]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_runtime_upgrade() -> frame_support::weights::Weight {
+			migration::migrate_to_v2::<T>()
+		}
+	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
