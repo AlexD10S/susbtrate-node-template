@@ -52,11 +52,18 @@ pub fn migrate_to_v2<T: Config>() -> Weight {
 
 					// We split the nick at ' ' (<space>).
 					match nick.iter().rposition(|&x| x == b" "[0]) {
-						Some(ndx) => Some((Nickname {
-							first: nick[0..ndx].to_vec(),
-							last: Some(nick[ndx + 1..].to_vec())
-						}, deposit)),
-						None => Some((Nickname { first: nick, last: None }, deposit))
+						Some(ndx) => {
+                            let bounded_first: BoundedVec<_, _> = nick[0..ndx].to_vec().try_into().unwrap();
+                            let bounded_last: BoundedVec<_, _> = nick[ndx + 1..].to_vec().try_into().unwrap();
+                            Some((Nickname {
+							    first: bounded_first,
+							    last: Some(bounded_last)
+						    }, deposit))
+                    },
+						None => {
+                            let bounded_name: BoundedVec<_, _> = nick.to_vec().try_into().unwrap();
+                            Some((Nickname { first: bounded_name, last: None }, deposit))
+                        }
 					}
 				}
 			);

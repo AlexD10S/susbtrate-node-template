@@ -38,7 +38,10 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::traits::{Currency, OnUnbalanced, ReservableCurrency, StorageVersion};
+use frame_support::{
+    traits::{Currency, OnUnbalanced, ReservableCurrency, StorageVersion},
+    BoundedVec,
+};
 pub use pallet::*;
 use sp_runtime::traits::{StaticLookup, Zero};
 use sp_std::prelude::*;
@@ -50,8 +53,6 @@ type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balan
 type NegativeImbalanceOf<T> =
 	<<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
-
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -111,16 +112,18 @@ pub mod pallet {
 		Unnamed,
 	}
 
-	#[derive(Encode, Decode, Default, TypeInfo)]
-	pub struct Nickname {
-		pub first: Vec<u8>,
-		pub last: Option<Vec<u8>>, // handles empty storage
+	#[derive(Encode, Decode, Default, TypeInfo, MaxEncodedLen)]
+	#[scale_info(skip_type_params(T))]
+	#[codec(mel_bound())]
+	pub struct Nickname<T: Config> {
+		pub first: BoundedVec<u8, T::MaxLength>,
+		pub last: Option<BoundedVec<u8, T::MaxLength>>, // handles empty storage
 	}
 
 	/// The lookup table for names.
 	#[pallet::storage]
 	pub(super) type NameOf<T: Config> =
-		StorageMap<_, Twox64Concat, T::AccountId, (Nickname, BalanceOf<T>)>;
+		StorageMap<_, Twox64Concat, T::AccountId, (Nickname<T>, BalanceOf<T>)>;
 	
 	// #[pallet::storage]
 	// pub(super) type NameOf<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, (BoundedVec<u8, T::MaxLength>, BalanceOf<T>)>;
@@ -130,7 +133,7 @@ pub mod pallet {
 		
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	#[pallet::without_storage_info]
+	// #[pallet::without_storage_info]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
@@ -161,15 +164,18 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::call_index(0)]
 		#[pallet::weight(50_000_000)]
-		pub fn set_name(origin: OriginFor<T>, first: Vec<u8>, last: Option<Vec<u8>>) -> DispatchResult {
+		pub fn set_name(origin: OriginFor<T>, first: Vec<u8>, last: Vec<u8>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let len = match last {
-				None => first.len(),
-				Some(ref last_name) => first.len() + last_name.len(),
-			};
-			ensure!(len <= T::MaxLength::get() as usize, Error::<T>::TooLong);
-			ensure!(len >= T::MinLength::get() as usize, Error::<T>::TooShort);
+			let bounded_first: BoundedVec<_, _> =
+				first.try_into().map_err(|_| Error::<T>::TooLong)?;
+			ensure!(bounded_first.len() >= T::MinLength::get() as usize, Error::<T>::TooShort);
+
+			let bounded_last: BoundedVec<_, _> =
+				last.try_into().map_err(|_| Error::<T>::TooLong)?;
+			ensure!(bounded_last.len() >= T::MinLength::get() as usize, Error::<T>::TooShort);
+    
+            let bounded_last: Option<BoundedVec<u8, T::MaxLength>> = Some(bounded_last);
 			
 
 			let deposit = if let Some((_, deposit)) = <NameOf<T>>::get(&sender) {
@@ -183,7 +189,7 @@ pub mod pallet {
 			};
 
 			
-			<NameOf<T>>::insert(&sender, (Nickname { first, last}, deposit));
+			<NameOf<T>>::insert(&sender, (Nickname{first: bounded_first, last: bounded_last}, deposit));
 			Ok(())
 		}
 
@@ -258,20 +264,23 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			target: AccountIdLookupOf<T>,
 			first: Vec<u8>, 
-			last: Option<Vec<u8>>
+			last: Vec<u8>
 		) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
 
-			let len = match last {
-				None => first.len(),
-				Some(ref last_name) => first.len() + last_name.len(),
-			};
-			ensure!(len <= T::MaxLength::get() as usize, Error::<T>::TooLong);
-			ensure!(len >= T::MinLength::get() as usize, Error::<T>::TooShort);
+			let bounded_first: BoundedVec<_, _> =
+				first.try_into().map_err(|_| Error::<T>::TooLong)?;
+			ensure!(bounded_first.len() >= T::MinLength::get() as usize, Error::<T>::TooShort);
+
+			let bounded_last: BoundedVec<_, _> =
+				last.try_into().map_err(|_| Error::<T>::TooLong)?;
+			ensure!(bounded_last.len() >= T::MinLength::get() as usize, Error::<T>::TooShort);
+    
+            let bounded_last: Option<BoundedVec<u8, T::MaxLength>> = Some(bounded_last);
 
 			let target = T::Lookup::lookup(target)?;
 			let deposit = <NameOf<T>>::get(&target).map(|x| x.1).unwrap_or_else(Zero::zero);
-			<NameOf<T>>::insert(&target, (Nickname { first, last}, deposit));
+			<NameOf<T>>::insert(&target, (Nickname{first: bounded_first, last: bounded_last}, deposit));
 
 			Self::deposit_event(Event::<T>::NameForced { target });
 			Ok(())
